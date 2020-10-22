@@ -1,0 +1,206 @@
+---
+title: "Practical Machine Learning Project"
+author: "Pareel Amre"
+
+This is my submission for Practical Machine Learning Project.
+I have used th concepts studied in this course to for this submission.
+```{r,warning=FALSE,message=FALSE,include=FALSE,echo=FALSE}
+library(dplyr)
+library(ggplot2)
+library(DT)
+library(caret)
+library(knitr)
+library(corrplot)
+library(plotly)
+library(correlationfunnel)
+library(GGally)
+library(e1071)
+#library(rattle)
+```
+
+
+```{r}
+files <- read.csv("pml-training.csv", stringsAsFactors = F,na.strings = c("","NA","#DIV/0!"))
+second_files <- read.csv("pml-testing.csv", stringsAsFactors = F,na.strings = c("","NA","#DIV/0!"))
+```
+
+```{r}
+partitions <- createDatapartitions(files$classe, p = 0.8, list = F)
+reg <- files[-partitions,]
+files <- files[partitions,]
+```
+
+```{r}
+b_mm <- sapply(select(files,names(files)[grepl("_belt",names(files))]),
+                    function(x) sum(is.na(x)))
+```
+```{r}
+arm_mm <- sapply(select(files,names(files)[grepl("_arm",names(files))]),
+                   function(x) sum(is.na(x)))
+```
+```{r}
+f_mm <- sapply(select(files,
+                              names(files)[grepl("_forearm",names(files))]),
+                       function(x) sum(is.na(x)))
+```
+
+```{r}
+dumb_mmmmmm <- sapply(select(files,
+                               names(files)[grepl("_dumbbell",names(files))]),
+                        function(x) sum(is.na(x)))
+```
+
+```{r}
+c_d <- c(names(b_mm[b_mm != 0]), 
+                  names(arm_mm[arm_mm != 0]),
+                  names(f_mm[f_mm != 0]),
+                  names(dumb_mmmmmm[dumb_mmmmmm != 0]))
+```
+```{r}
+a_n_d <- tbl_df(files %>% 
+                      select(-c_d,
+                             -c(X,user_name, raw_timestamp_part_1, 
+                                raw_timestamp_part_2, cvtd_timestamp, 
+                                new_window,num_window)))
+a_n_d$classe <- as.factor(a_n_d$classe)
+a_n_d[,1:52] <- lapply(a_n_d[,1:52],as.numeric)
+```
+
+```{r,fig.height=10,fig.width=10}
+craasd <- cor(select(a_n_d, -classe))
+diag(craasd) <- 0
+craasd <- which(abs(craasd)>0.8,arr.ind = T)
+craasd <- unique(row.names(craasd))
+corrplot(cor(select(a_n_d,craasd)),
+         type="upper", order="hclust",method = "number")
+```
+
+```{r}
+# binarizing data
+#correlationfunnel website: https://business-science.github.io/correlationfunnel/
+cfun_data <- a_n_d %>% binarize(n_bins = 4, thresh_infreq = 0.01)
+```
+
+
+
+```{r,fig.align="center",fig.width=8,fig.height=10}
+correelaation_asd <- cfun_data %>% correlate(target = classe__A) 
+correelaation_asd %>% plot_correlation_funnel(interactive = T,limits = c(-0.5,0.5))
+```
+
+
+
+```{r, echo=FALSE, eval=FALSE}
+temporary_asr <- head(correelaation_asd %>% mutate(corr = abs(correlation)) %>% 
+  arrange(desc(corr)) %>% select(feature) %>% unique(),20)
+temporary_asr$feature[which(temporary_asr$feature %in% craasd)]
+```
+
+
+```{r,fig.align="center",fig.width=8,fig.height=10}
+correaa_basd <- cfun_data %>% correlate(target = classe__B)
+correaa_basd %>% plot_correlation_funnel(interactive = T,limits = c(-0.5,0.5))
+```
+
+
+
+```{r, echo=FALSE, eval=FALSE}
+taexf <- head(correaa_basd %>% mutate(corr = abs(correlation)) %>% 
+  arrange(desc(corr)) %>% select(feature) %>% unique(),20)
+taexf$feature[which(taexf$feature %in% craasd)]
+```
+
+ 
+
+```{r,fig.align="center",fig.width=8,fig.height=10}
+correasde <- cfun_data %>% correlate(target = classe__C)
+correasde %>% plot_correlation_funnel(interactive = T,limits = c(-0.5,0.5))
+```
+
+ 
+
+```{r, echo=FALSE, eval=FALSE}
+tempoaedrc<- head(correasde %>% mutate(corr = abs(correlation)) %>% 
+  arrange(desc(corr)) %>% select(feature) %>% unique(),20)
+tempoaedrc$feature[which(tempoaedrc$feature %in% craasd)]
+```
+
+
+
+```{r,fig.align="center",fig.width=8,fig.height=10}
+corritmonos <- cfun_data %>% correlate(target = classe__D)
+corritmonos %>% plot_correlation_funnel(interactive = T,limits = c(-0.5,0.5))
+```
+
+  
+
+```{r, echo=FALSE, eval=FALSE}
+teanaekdak <- head(corritmonos %>% mutate(corr = abs(correlation)) %>% 
+  arrange(desc(corr)) %>% select(feature) %>% unique(),20)
+teanaekdak$feature[which(teanaekdak$feature %in% craasd)]
+```
+
+
+
+```{r,fig.align="center",fig.width=8,fig.height=10}
+curote_eae <- cfun_data %>% correlate(target = classe__E)
+curote_eae %>% plot_correlation_funnel(interactive = T,limits = c(-0.5,0.5))
+```
+ 
+
+```{r, echo=FALSE, eval=FALSE}
+tesraeeaee <- head(curote_eae %>% mutate(corr = abs(correlation)) %>% 
+  arrange(desc(corr)) %>% select(feature) %>% unique(),20)
+tesraeeaee$feature[which(tesraeeaee$feature %in% craasd)]
+```
+
+
+```{r}
+#subseting a_n_d
+collumo_asr <- c("magnet_arm_x", "pitch_forearm" , "magnet_dumbbell_y", 
+           "roll_forearm", "gyros_dumbbell_y") 
+collumo_bsr <- c("magnet_dumbbell_y", "magnet_dumbbell_x" , "roll_dumbbell" , 
+           "magnet_belt_y" , "accel_dumbbell_x" )
+collumo_csr <- c("magnet_dumbbell_y", "roll_dumbbell" , "accel_dumbbell_y" , 
+           "magnet_dumbbell_x", "magnet_dumbbell_z")
+collumo_dsr <- c("pitch_forearm" , "magnet_arm_y" , "magnet_forearm_x",
+           "accel_dumbbell_y", "accel_forearm_x")
+collumo_esr <- c("magnet_belt_y" , "magnet_belt_z" , "roll_belt", 
+           "gyros_belt_z" , "magnet_dumbbell_y")
+fianslasasas <- character()
+for(c in c(collumo_asr,collumo_bsr,collumo_csr,collumo_dsr,collumo_esr)){
+  fianslasasas <- union(fianslasasas, c)
+}
+a_n_d2 <- a_n_d %>% select(fianslasasas, classe)
+data.frame("arm" = sum(grepl("_arm",fianslasasas)), 
+           "forearm" = sum(grepl("_forearm",fianslasasas)),
+           "belt" = sum(grepl("_belt",fianslasasas)),
+           "dumbbell" = sum(grepl("_dumbbell",fianslasasas)))
+```
+
+ 
+
+```{r, fig.align="center",fig.height=15,fig.width=15}
+dineermera <- function(data, mapping, ...) {
+  ggplot(data = data, mapping=mapping) +
+    geom_density(..., alpha = 0.3)+scale_fill_brewer(palette="Set2") 
+}
+p_dineermera <- function(data, mapping, ...) {
+  ggplot(data = data, mapping=mapping) +
+    geom_point(..., alpha = 0.1)+ scale_fill_brewer(palette="Set2") 
+}
+ggpairs(a_n_d2, columns = 1:5,aes(color = classe),
+        lower = list(continuous = p_dineermera),diag = list(continuous = dineermera))
+```
+
+```{r,fig.align="center",fig.height=15,fig.width=15}
+ggpairs(a_n_d2, columns = 6:10,aes(color = classe),
+        lower = list(continuous = p_dineermera),diag = list(continuous = dineermera))
+```
+
+```{r,fig.align="center",fig.height=15,fig.width=15}
+ggpairs(a_n_d2, columns = 11:17,aes(color = classe),
+        lower = list(continuous = p_dineermera),diag = list(continuous = dineermera))
+```
+
+
